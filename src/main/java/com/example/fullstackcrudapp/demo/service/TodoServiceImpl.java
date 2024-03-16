@@ -1,44 +1,55 @@
 package com.example.fullstackcrudapp.demo.service;
 
-import com.example.fullstackcrudapp.demo.dao.CrudRepository;
+import com.example.fullstackcrudapp.demo.dao.TodoRepository;
 import com.example.fullstackcrudapp.demo.entity.Todo;
+import jakarta.persistence.TypedQuery;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class TodoServiceImpl implements TodoService {
 
-    private CrudRepository crudRepository;
+    private TodoRepository todoRepository;
 
     @Autowired
-    public TodoServiceImpl(CrudRepository theCrudRepository)
+    public TodoServiceImpl(TodoRepository theTodoRepository)
     {
-        this.crudRepository=theCrudRepository;
+        this.todoRepository=theTodoRepository;
     }
 
     @Override
     public List<Todo> findAll() {
-        return crudRepository.findAll();
+        return todoRepository.findAll();
     }
 
     @Override
     public Todo findById(int theId) {
-        return crudRepository.findById(theId);
+
+        Optional<Todo> findTodo=todoRepository.findById(theId);
+
+        Todo todoQuery=null;
+
+        if(findTodo.isPresent())
+        {
+            todoQuery=findTodo.get();
+        }else {
+            throw  new RuntimeException("Did not find employee id - "+theId);
+        }
+        return todoQuery;
     }
 
     @Override
-    @Transactional
     public Todo save(Todo theTodo) {
-        return crudRepository.save(theTodo);
+        return todoRepository.save(theTodo);
     }
 
     @Override
-    @Transactional
     public void deleteById(int theId) {
-        crudRepository.deleteById(theId);
+        todoRepository.deleteById(theId);
     }
 
 }
