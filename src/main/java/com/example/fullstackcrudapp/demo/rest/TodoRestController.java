@@ -36,7 +36,13 @@ public class TodoRestController {
     @GetMapping("/todos/{id}")
     public Todo findById(@PathVariable int id)
     {
-        return todoService.findById(id);
+        Todo theTodo=todoService.findById(id);
+
+        if(theTodo == null)
+        {
+            throw  new RuntimeException("Employee id not found - "+id);
+        }
+        return theTodo;
     }
 
     @PostMapping("/todos")
@@ -54,7 +60,13 @@ public class TodoRestController {
     @DeleteMapping("/todos/{id}")
     public String deleteById(@PathVariable int id)
     {
-        todoService.deleteById(id);
-        return "the id is deleted: "+id;
+       Todo deleteTodo= todoService.findById(id);
+
+       if(deleteTodo == null){
+           throw new RuntimeException("Employee id not found - "+id);
+       }
+
+       todoService.deleteById(id);
+        return "Deleted employee id -: "+id;
     }
 }
