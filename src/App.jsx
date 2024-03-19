@@ -1,166 +1,231 @@
 import { useState, useEffect } from "react";
 
-function App() {
-  const [data, setData] = useState([]); //store for data get/put request
+import axios from "axios";
 
-  const [todoname, setTodoname] = useState(""); // todoname input
-  const [tododesc, setTododesc] = useState(""); // todo description input
+// import Styles from "./App.module.css";
 
-  useEffect(() => {
-    fetchData();
+const TodoPage = () => {
+  const [total, setTotal] = useState([]);
+
+  const [createForm, setCreateForm] = useState({
+    taskName: "",
+    taskDesc: "",
   });
 
-  //GET Request
-  const fetchData = async () => {
-    try {
-      const response = await fetch("http://localhost:8080/api/todos");
+  const [updateForm, setUpdateForm] = useState({
+    id: null,
+    taskName: "",
+    taskDesc: "",
+  });
 
-      if (!response.ok) {
-        throw new Error("Network response was not ok - Get method");
-      }
-      const data = await response.json();
-      setData(data);
-    } catch (error) {
-      console.error(error);
-    }
+  useEffect(() => {
+    fetchTodo();
+  }, []);
+
+  //get the data -- GET Request
+
+  const fetchTodo = async () => {
+    const res = await axios.get("http://localhost:8080/api/todos");
+
+    setTotal(res.data);
   };
 
-  //handlers
+  console.log("data fetched - Get method");
 
-  //create
-  const todonameinputHandler = (event) => {
-    setTodoname(event.target.value);
+  // form input fields
+  const createFormField = (event) => {
+    const { name, value } = event.target;
+
+    setCreateForm({
+      ...createForm,
+      [name]: value,
+    });
   };
 
-  const tododescinputHandler = (event) => {
-    setTododesc(event.target.value);
+  //update input fileds
+  const updateFormField = (event) => {
+    const { name, value } = event.target;
+
+    setUpdateForm({
+      ...updateForm,
+      [name]: value,
+    });
   };
 
-  // POST Request
-  const formSubmissionHandler = async (event) => {
-    event.preventDefault();
+  //post the data  -- POST request
 
-    //post request input data
-    const todoData = {
-      taskName: todoname,
-      taskDesc: tododesc,
-    };
+  const createTodo = async (e) => {
+    e.preventDefault();
 
-    try {
-      const response = await fetch("http://localhost:8080/api/todos", {
-        method: "POST",
-        body: JSON.stringify(todoData),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+    const res = await axios.post("http://localhost:8080/api/todos", createForm);
 
-      if (!response.ok) {
-        throw new Error("Network response was not ok - Post method");
-      }
-      await response.json();
-    } catch (error) {
-      console.error(error.message);
-    }
+    setTotal([...total, res.data]);
+
+    setCreateForm({
+      taskName: "",
+      taskDesc: "",
+    });
+
+    console.log("data post - Post method");
   };
 
-  // DELET Request
-  const deleteHandler = async (theId) => {
-    try {
-      const response = await fetch(`http://localhost:8080/api/todos/${theId}`, {
-        method: "DELETE",
-      });
+  // toggle handler for update the request
+  const toggleUpdate = (todo) => {
+    setUpdateForm({
+      id: todo.id,
+      taskName: todo.taskName,
+      taskDesc: todo.taskDesc,
+    });
+  };
 
-      if (!response.ok) {
-        throw new Error("Network response was not ok - Delete method");
-      }
-      await response.json();
-    } catch (error) {
-      console.error(error.message);
-    }
+  // update handler --PUT Request
+
+  const updateTodo = async (e) => {
+    e.preventDefault();
+
+    const { taskName, taskDesc } = updateForm;
+
+    //send the update request
+
+    const res = await axios.put("http://localhost:8080/api/todos", {
+      taskName,
+      taskDesc,
+    });
+
+    //update state
+
+    const newTodos = [...total];
+    const noteIndex = total.findIndex((todo) => todo.id === updateForm.id);
+
+    newTodos[noteIndex] = res.data;
+
+    setTotal(newTodos);
+
+    //clear update form state
+    setUpdateForm({
+      id: null,
+      productname: "",
+      sellername: "",
+    });
+
+    console.log("data update -- PUT Method");
+  };
+
+  // delete handler  --DELETE Request
+
+  const deleteTodo = async (id) => {
+    await axios.delete(`http://localhost:8080/api/todos/${id}`);
+
+    const newTodos = total.filter((todo) => todo.id !== id);
+
+    setTotal(newTodos);
+
+    console.log("data Deleted - Delete Method");
   };
 
   return (
     <>
-      <div className="flex items-center justify-between">
-        <div className="flex-col rounded-md shadow-xl mt-20 p-12 w-64 mx-auto   bg-slate-500   items-center h-auto justify-center">
-          <h1 className="text-white font-bold text-xl text-center mb-5">
-            Create Todo
-          </h1>
-          <form onSubmit={formSubmissionHandler}>
-            <label className="text-white text-sm  " htmlFor="taskname">
-              Taskname
-            </label>
-            <input
-              className="text-xs py-1 px-2 mt-1 mb-3 rounded-sm"
-              onChange={todonameinputHandler}
-              value={todoname}
-              placeholder="Enter your task name"
-              type="text"
-              name="taskname"
-              id="taskname"
-            />
-            <label className="text-white text-sm" htmlFor="taskdesc">
-              Task Description
-            </label>
-            <input
-              className="text-xs py-1 px-2 rounded-sm"
-              placeholder="Enter your task desc"
-              onChange={tododescinputHandler}
-              value={tododesc}
-              type="text"
-              name="taskdesc"
-              id="taskdesc"
-            />
-            <button
-              className="bg-green-300 rounded-sm mt-5 px-3 py-1 text-sm font-thin capitalize"
-              type="sumbit"
-            >
-              submit
-            </button>
-          </form>
-        </div>
-
-        <div className="w-64 rounded-md mt-20 bg-purple-200 mr-16 p-10 h-96 overflow-y-scroll">
-          <div className="flex items-center justify-between">
-            <h1 className="text-purple-500 text-2xl font-bold underline underline-offset-4 underline-purple-200">
-              Todo's
-            </h1>
-            <span className="flex items-center justify-center">
-              <input
-                className="w-16 ml-2 px-1 text-xs py-1 rounded-sm "
-                placeholder="search todo.."
-                type="text"
-              />
-              <button
-                type="submit"
-                className="ml-1 bg-pink-400 px-1 w-5 rounded"
-              >
-                S
-              </button>
-            </span>
-          </div>
-          {data.map((item, index) => (
-            <ul className="text-zinc-700 border-b border-black" key={index}>
-              <li className="text-xl mt-2 font-semibold">{item.taskName}</li>
-              <li className="">{item.taskDesc}</li>
-              <p className="flex items-center justify-between mb-2">
-                <span className="bg-green-300 text-sm px-2 rounded shadow-md cursor-pointer">
-                  update
-                </span>
-                <span
-                  onClick={() => deleteHandler(item.id)}
-                  className="bg-red-300 text-sm px-2 rounded shadow-md cursor-pointer"
+      <div className="flex flex-col lg:flex-row  relative items-center justify-evenly min-h-screen bg-slate-500 ">
+        <header className="absolute left-1 top-1 bg-green-400 p-3 m-3 rounded-sm text-xl font-semibold">
+          CRUD App
+        </header>
+        <div className="flex-col bg-red p-30 mt-32 lg:mt-0 mb-12 lg:mb-0 ">
+          {/*  */}
+          {updateForm.id && (
+            <div className="flex-col rounded-md w-60 bg-yellow-500 p-10 ">
+              <h2 className="text-black text-center p-4 text-xl">
+                Update Todo
+              </h2>
+              <form onSubmit={updateTodo}>
+                <input
+                  className="w-40 mb-3 px-2 rounded"
+                  type="text"
+                  onChange={updateFormField}
+                  value={updateForm.taskName}
+                  name="taskName"
+                  placeholder="Enter your name"
+                />
+                <input
+                  className="w-40 mb-3 px-2 rounded"
+                  type="text"
+                  onChange={updateFormField}
+                  value={updateForm.taskDesc}
+                  name="taskDesc"
+                  placeholder="Enter your desc"
+                />
+                <button
+                  className="bg-slate-700 text-white px-2 mt-4 rounded-sm text-md font-thin font-sans"
+                  type="submit"
                 >
-                  delete
-                </span>
-              </p>
-            </ul>
-          ))}
+                  Update Todo
+                </button>
+              </form>
+            </div>
+          )}
+          {/*  */}
+          {!updateForm.id && (
+            <div className="flex-col rounded-md w-60 bg-slate-700 p-10 ">
+              <h2 className="text-white text-center p-4 text-xl">
+                Create Todo
+              </h2>
+
+              <form onSubmit={createTodo}>
+                <input
+                  className="w-40 mb-3 px-2 rounded"
+                  type="text"
+                  onChange={createFormField}
+                  value={createForm.taskName}
+                  name="taskName"
+                  placeholder="Enter your name"
+                />
+                <input
+                  className="w-40 mb-3 px-2 rounded"
+                  type="text"
+                  onChange={createFormField}
+                  value={createForm.taskDesc}
+                  name="taskDesc"
+                  placeholder="Enter your desc"
+                />
+                <button
+                  className="bg-green-300 px-2 mt-4 rounded-sm text-md font-thin font-sans"
+                  type="submit"
+                >
+                  Create Todo
+                </button>
+              </form>
+            </div>
+          )}
+        </div>
+        <div className="bg-slate-900 p-4 h-96 rounded-md  [scrollbar-width:none] overflow-y-scroll">
+          <h2 className="text-green-300 bg-slate-900 p-5  text-2xl sticky -top-4 ">
+            TODO 'S
+          </h2>
+          {total.map((todo, index) => {
+            return (
+              <div
+                className="bg-slate-400 w-56 p-2 border-b-8 border-slate-900 lg:w-96"
+                key={index}
+              >
+                <p className="text-md capitalize font-bold">{todo.taskName}</p>
+                <p className="text-md capitalize font-mono">{todo.taskDesc}</p>
+                <button
+                  className="bg-red-300 px-1 text-xs py-1 m-1"
+                  onClick={() => deleteTodo(todo.id)}
+                >
+                  DeleteTodo
+                </button>
+                <button
+                  className="bg-yellow-300 px-1 text-xs py-1 m-1"
+                  onClick={() => toggleUpdate(todo)}
+                >
+                  UpdateTodo
+                </button>
+              </div>
+            );
+          })}
         </div>
       </div>
     </>
   );
-}
-
-export default App;
+};
+export default TodoPage;
